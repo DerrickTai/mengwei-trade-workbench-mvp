@@ -1,0 +1,12 @@
+alter table ai_generation_records add column if not exists request_started_at timestamptz;
+alter table ai_generation_records add column if not exists response_duration_ms bigint;
+alter table ai_generation_records add column if not exists http_status integer;
+alter table ai_generation_records add column if not exists raw_response_summary text;
+alter table ai_generation_records add column if not exists structured_output jsonb;
+alter table content_assets add column if not exists factuality_score integer;
+alter table content_assets add column if not exists platform_fit_score integer;
+alter table content_assets add column if not exists usefulness_score integer;
+alter table content_assets add column if not exists reviewer_notes text;
+alter table content_assets add column if not exists rejection_reasons jsonb not null default '[]';
+alter table content_assets add column if not exists reviewed_at timestamptz;
+alter table content_assets add column if not exists reviewed_by uuid;

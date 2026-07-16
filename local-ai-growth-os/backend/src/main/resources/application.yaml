@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: local-ai-growth-os
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/local_growth}
+    username: ${DATABASE_USERNAME:local_growth}
+    password: ${DATABASE_PASSWORD:local_growth_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+server:
+  address: 0.0.0.0
+  port: ${SERVER_PORT:8081}
+app:
+  auth-token: ${APP_AUTH_TOKEN:change-me-before-production}
+  demo-seed-enabled: ${APP_DEMO_SEED_ENABLED:false}
+  storage:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    public-endpoint: ${MINIO_PUBLIC_ENDPOINT:${MINIO_ENDPOINT:http://localhost:9000}}
+    access-key: ${MINIO_ROOT_USER:minioadmin}
+    secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}
+    bucket: ${MINIO_BUCKET:local-growth-assets}
+  openai:
+    base-url: ${OPENAI_COMPATIBLE_BASE_URL:}
+    api-key: ${OPENAI_COMPATIBLE_API_KEY:}
+    model: ${OPENAI_COMPATIBLE_MODEL:}
+    connect-timeout-ms: ${OPENAI_COMPATIBLE_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${OPENAI_COMPATIBLE_READ_TIMEOUT_MS:30000}
