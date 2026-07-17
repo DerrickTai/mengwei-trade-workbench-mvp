@@ -1,12 +1,14 @@
 package com.mengwei.localgrowth.merchant;
+import com.mengwei.localgrowth.fact.FactCenterService;
 import com.mengwei.localgrowth.identity.AuthService.Identity; import com.mengwei.localgrowth.shared.TenantAccess; import jakarta.validation.Valid; import jakarta.validation.constraints.NotBlank; import java.util.*; import org.springframework.web.bind.annotation.*;
 @RestController @RequestMapping("/api/v1/merchants") public class MerchantController {
-  private final MerchantService service;private final TenantAccess access;public MerchantController(MerchantService s,TenantAccess a){service=s;access=a;} private Identity i(String h){return access.identity(h);}
+  private final MerchantService service;private final FactCenterService facts;private final TenantAccess access;public MerchantController(MerchantService s,FactCenterService facts,TenantAccess a){service=s;this.facts=facts;access=a;} private Identity i(String h){return access.identity(h);}
   @GetMapping public List<Map<String,Object>> list(@RequestHeader("Authorization")String h){return service.merchants(i(h));}
   @PostMapping public Map<String,Object> create(@RequestHeader("Authorization")String h,@Valid @RequestBody MerchantRequest r){return service.createMerchant(i(h),r.name(),r.industry(),r.city(),r.district());}
   @GetMapping("/{id}") public Map<String,Object> get(@RequestHeader("Authorization")String h,@PathVariable UUID id){return service.merchant(i(h),id);}
   @PutMapping("/{id}") public Map<String,Object> update(@RequestHeader("Authorization")String h,@PathVariable UUID id,@Valid @RequestBody MerchantUpdate r){return service.updateMerchant(i(h),id,r.name(),r.industry(),r.city(),r.district(),r.status());}
-  @GetMapping("/{id}/brands") public List<Map<String,Object>> brands(@RequestHeader("Authorization")String h,@PathVariable UUID id){return service.brands(i(h),id);}
+  /** Compatibility projection: legacy route now exposes the fact-center brand profile. */
+  @GetMapping("/{id}/brands") public List<Map<String,Object>> brands(@RequestHeader("Authorization")String h,@PathVariable UUID id){return facts.brands(i(h),id);}
   @PostMapping("/{id}/brands") public Map<String,Object> brand(@RequestHeader("Authorization")String h,@PathVariable UUID id,@Valid @RequestBody BrandRequest r){return service.addBrand(i(h),id,r.name(),r.website(),r.aliases(),r.services(),r.claims());}
   @GetMapping("/{id}/prompt-cases") public List<Map<String,Object>> prompts(@RequestHeader("Authorization")String h,@PathVariable UUID id){return service.prompts(i(h),id);}
   @PostMapping("/{id}/prompt-cases") public Map<String,Object> prompt(@RequestHeader("Authorization")String h,@PathVariable UUID id,@Valid @RequestBody PromptRequest r){return service.addPrompt(i(h),id,r.question(),r.category(),r.city(),r.district(),r.intentLevel(),r.enabled(),r.sortOrder(),r.locale());}

@@ -1,0 +1,1 @@
+<template><section class="module-page"><div class="module-heading"><div><span class="eyebrow">PLAYBOOKS</span><h2>策略库</h2><p>未来沉淀行业问题集、事实采集模板、内容规则和人工审核SOP。</p></div></div><div class="empty-state"><h3>策略库暂未启用</h3><p>当前策略直接来自正式诊断Gap和30天任务，不额外创建无效模板。</p></div></section></template>

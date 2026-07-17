@@ -4,4 +4,5 @@ import 'element-plus/dist/index.css'
 import './style.css'
 import './layout-overrides.css'
 import App from './App.vue'
-createApp(App).use(ElementPlus).mount('#app')
+import router from './router'
+createApp(App).use(ElementPlus).use(router).mount('#app')

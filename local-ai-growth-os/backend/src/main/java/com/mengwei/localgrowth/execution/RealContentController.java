@@ -3,6 +3,7 @@ import com.mengwei.localgrowth.identity.AuthService.Identity;import com.mengwei.
 @RestController @RequestMapping("/api/v1") public class RealContentController {private final RealContentService service;private final TenantAccess access;public RealContentController(RealContentService s,TenantAccess a){service=s;access=a;}private Identity i(String h){return access.identity(h);}
 @GetMapping("/ai/provider-status")Map<String,Object> status(){return service.status();}
 @PostMapping("/ai/provider-test")Map<String,Object> test(){return service.testConnection();}
-@PostMapping("/optimization-tasks/{id}/real-content")Map<String,Object> generate(@RequestHeader("Authorization")String h,@PathVariable UUID id,@Valid @RequestBody Request r){return service.generate(i(h),id,r.channel());}
-public record Request(@NotBlank String channel){}
+@PostMapping("/optimization-tasks/{id}/real-content")Map<String,Object> generate(@RequestHeader("Authorization")String h,@PathVariable UUID id,@Valid @RequestBody Request r){return service.generate(i(h),id,r.channel(),r.storefrontId());}
+@GetMapping("/optimization-tasks/{id}/real-content-facts")Map<String,Object> preview(@RequestHeader("Authorization")String h,@PathVariable UUID id,@RequestParam(required=false) UUID storefrontId){return service.preview(i(h),id,storefrontId);}
+public record Request(@NotBlank String channel,UUID storefrontId){}
 }
