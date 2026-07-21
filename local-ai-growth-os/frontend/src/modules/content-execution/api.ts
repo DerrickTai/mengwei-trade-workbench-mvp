@@ -9,3 +9,7 @@ export const updateWork=(m:string,id:string,p:any)=>api(`${base(m)}/work-items/$
 export const briefs=(m:string,work:string)=>api(`${base(m)}/work-items/${work}/briefs`)
 export const createBrief=(m:string,work:string,p:any)=>api(`${base(m)}/work-items/${work}/briefs`,{method:'POST',body:JSON.stringify(p)})
 export const updateBrief=(m:string,id:string,p:any)=>api(`${base(m)}/briefs/${id}`,{method:'PUT',body:JSON.stringify(p)})
+export const generateDraft=(m:string,brief:string,idempotencyKey:string)=>api(`${base(m)}/briefs/${brief}/drafts`,{method:'POST',body:JSON.stringify({idempotencyKey})})
+export const drafts=(m:string,brief:string)=>api(`${base(m)}/briefs/${brief}/drafts`)
+export const draft=(m:string,id:string)=>api(`${base(m)}/drafts/${id}`)
+export const reviewDraft=(m:string,id:string,action:'SUBMIT'|'APPROVE'|'REJECT',comment:string)=>api(`${base(m)}/drafts/${id}/review`,{method:'POST',body:JSON.stringify({action,comment})})
