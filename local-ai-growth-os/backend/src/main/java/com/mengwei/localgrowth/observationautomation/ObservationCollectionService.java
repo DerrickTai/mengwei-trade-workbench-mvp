@@ -16,6 +16,7 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -124,6 +125,18 @@ public class ObservationCollectionService {
       Identity identity,
       UUID merchantId,
       ObservationCollectionController.RunInput input) {
+    return run(identity, merchantId, input, "MANUAL");
+  }
+
+  /** Internal callers may preserve the same staging pipeline while declaring their trigger. */
+  public Map<String, Object> run(
+      Identity identity,
+      UUID merchantId,
+      ObservationCollectionController.RunInput input,
+      String triggerType) {
+    if (!Set.of("MANUAL", "RETEST").contains(triggerType)) {
+      throw bad("INVALID_TRIGGER_TYPE", "不支持的采集触发来源");
+    }
     merchant(identity, merchantId);
     List<Map<String, Object>> configRows =
         selectedConfigs(identity, merchantId, input.collectorConfigIds());
@@ -146,7 +159,7 @@ public class ObservationCollectionService {
           failure_count,started_at,created_at,created_by
         ) values(
           :id,:tenantId,:merchantId,cast(:configs as jsonb),cast(:questions as jsonb),
-          'MANUAL','RUNNING',cast(:input as jsonb),0,0,0,:now,:now,:userId
+          :triggerType,'RUNNING',cast(:input as jsonb),0,0,0,:now,:now,:userId
         )
         """,
         base(identity, merchantId)
@@ -155,6 +168,7 @@ public class ObservationCollectionService {
             .addValue("questions", json(input.questionIds()))
             .addValue("input", json(Map.of(
                 "autoCreateDraft", Boolean.TRUE.equals(input.autoCreateDraft()))))
+            .addValue("triggerType", triggerType)
             .addValue("now", now)
             .addValue("userId", identity.userId()));
 

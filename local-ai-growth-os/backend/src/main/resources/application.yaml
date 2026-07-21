@@ -29,3 +29,11 @@ app:
     model: ${OPENAI_COMPATIBLE_MODEL:}
     connect-timeout-ms: ${OPENAI_COMPATIBLE_CONNECT_TIMEOUT_MS:5000}
     read-timeout-ms: ${OPENAI_COMPATIBLE_READ_TIMEOUT_MS:30000}
+  retest-automation:
+    worker-enabled: ${APP_RETEST_AUTOMATION_WORKER_ENABLED:false}
+    poll-interval-ms: ${APP_RETEST_AUTOMATION_POLL_INTERVAL_MS:60000}
+    claim-limit: ${APP_RETEST_AUTOMATION_CLAIM_LIMIT:3}
+    lease-seconds: ${APP_RETEST_AUTOMATION_LEASE_SECONDS:300}
+    max-cells-per-point: ${APP_RETEST_AUTOMATION_MAX_CELLS_PER_POINT:200}
+  observation:
+    stub-enabled: ${APP_OBSERVATION_STUB_ENABLED:false}
