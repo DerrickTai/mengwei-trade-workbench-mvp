@@ -5,6 +5,10 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/local_growth}
     username: ${DATABASE_USERNAME:local_growth}
     password: ${DATABASE_PASSWORD:local_growth_dev}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
   jpa:
     open-in-view: false
     hibernate:
@@ -37,3 +41,11 @@ app:
     max-cells-per-point: ${APP_RETEST_AUTOMATION_MAX_CELLS_PER_POINT:200}
   observation:
     stub-enabled: ${APP_OBSERVATION_STUB_ENABLED:false}
+  publisher-worker:
+    enabled: ${PUBLISHER_WORKER_ENABLED:false}
+    hmac-secret: ${PUBLISHER_WORKER_HMAC_SECRET:}
+    id-allowlist: ${PUBLISHER_WORKER_ID_ALLOWLIST:}
+    timestamp-window-seconds: ${PUBLISHER_WORKER_TIMESTAMP_WINDOW_SECONDS:300}
+    lease-seconds: ${PUBLISHER_WORKER_LEASE_SECONDS:300}
+    max-attempts: ${PUBLISHER_WORKER_MAX_ATTEMPTS:5}
+    replay-ttl-seconds: ${PUBLISHER_WORKER_REPLAY_TTL_SECONDS:900}

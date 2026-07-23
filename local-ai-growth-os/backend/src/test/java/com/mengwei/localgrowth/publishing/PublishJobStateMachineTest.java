@@ -73,8 +73,10 @@ class PublishJobStateMachineTest {
   }
 
   @Test
-  void normalDispatchFlowDoesNotAllowStatusRegression() {
+  void expiredExecutionMayBeRequeuedBeforeANewClaim() {
+    assertThat(PublishJobStateMachine.canTransition(PublishJobStatus.CLAIMED,
+        PublishJobStatus.QUEUED)).isTrue();
     assertThat(PublishJobStateMachine.canTransition(PublishJobStatus.RUNNING,
-        PublishJobStatus.QUEUED)).isFalse();
+        PublishJobStatus.QUEUED)).isTrue();
   }
 }

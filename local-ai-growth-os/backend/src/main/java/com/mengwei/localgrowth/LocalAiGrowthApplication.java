@@ -11,9 +11,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.mengwei.localgrowth.observationautomation.retest.RetestAutomationProperties;
+import com.mengwei.localgrowth.publishing.PublisherWorkerProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(RetestAutomationProperties.class)
+@EnableConfigurationProperties({RetestAutomationProperties.class, PublisherWorkerProperties.class})
 public class LocalAiGrowthApplication {
   public static void main(String[] args) { SpringApplication.run(LocalAiGrowthApplication.class, args); }
   @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }

@@ -31,10 +31,10 @@ public final class PublishJobStateMachine {
         PublishJobStatus.CANCELLED, PublishJobStatus.EXPIRED, PublishJobStatus.FAILED_FINAL));
     map.put(PublishJobStatus.QUEUED, EnumSet.of(PublishJobStatus.CLAIMED, PublishJobStatus.CANCELLED,
         PublishJobStatus.EXPIRED, PublishJobStatus.FAILED_RETRYABLE, PublishJobStatus.FAILED_FINAL));
-    map.put(PublishJobStatus.CLAIMED, EnumSet.of(PublishJobStatus.RUNNING,
+    map.put(PublishJobStatus.CLAIMED, EnumSet.of(PublishJobStatus.QUEUED, PublishJobStatus.RUNNING,
         PublishJobStatus.WAITING_LOGIN, PublishJobStatus.FAILED_RETRYABLE,
         PublishJobStatus.FAILED_FINAL, PublishJobStatus.CANCELLED, PublishJobStatus.EXPIRED));
-    map.put(PublishJobStatus.RUNNING, EnumSet.of(PublishJobStatus.WAITING_LOGIN,
+    map.put(PublishJobStatus.RUNNING, EnumSet.of(PublishJobStatus.RUNNING, PublishJobStatus.QUEUED, PublishJobStatus.WAITING_LOGIN,
         PublishJobStatus.WAITING_HUMAN, PublishJobStatus.DRAFT_SAVED, PublishJobStatus.PUBLISHED,
         PublishJobStatus.FAILED_RETRYABLE, PublishJobStatus.FAILED_FINAL,
         PublishJobStatus.CANCELLED, PublishJobStatus.EXPIRED));
