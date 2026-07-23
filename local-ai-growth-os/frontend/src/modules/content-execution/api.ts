@@ -13,3 +13,10 @@ export const generateDraft=(m:string,brief:string,idempotencyKey:string)=>api(`$
 export const drafts=(m:string,brief:string)=>api(`${base(m)}/briefs/${brief}/drafts`)
 export const draft=(m:string,id:string)=>api(`${base(m)}/drafts/${id}`)
 export const reviewDraft=(m:string,id:string,action:'SUBMIT'|'APPROVE'|'REJECT',comment:string)=>api(`${base(m)}/drafts/${id}/review`,{method:'POST',body:JSON.stringify({action,comment})})
+const publisherBase=(merchantId:string)=>`/merchants/${merchantId}`
+export const publisherAccounts=(m:string)=>api(`${publisherBase(m)}/publisher-accounts`)
+export const createPublisherAccount=(m:string,p:any)=>api(`${publisherBase(m)}/publisher-accounts`,{method:'POST',body:JSON.stringify(p)})
+export const deactivatePublisherAccount=(m:string,id:string)=>api(`${publisherBase(m)}/publisher-accounts/${id}`,{method:'DELETE'})
+export const publisherJobs=(m:string)=>api(`${publisherBase(m)}/publisher-jobs`)
+export const createPublisherJob=(m:string,p:any)=>api(`${publisherBase(m)}/publisher-jobs`,{method:'POST',body:JSON.stringify(p)})
+export const publisherJob=(m:string,id:string)=>api(`${publisherBase(m)}/publisher-jobs/${id}`)

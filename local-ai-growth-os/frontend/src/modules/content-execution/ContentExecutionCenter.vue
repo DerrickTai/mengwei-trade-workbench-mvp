@@ -21,6 +21,15 @@ const reviewing = ref(false)
 const generationError = ref('')
 const pendingGenerationKey = ref('')
 const reviewComment = ref('')
+const publisherAccounts = ref<any[]>([])
+const publisherJobs = ref<any[]>([])
+const selectedPublisherJob = ref<any>()
+const accountForm = ref<any>({ displayName:'', externalAccountId:'', profileRef:'', credentialRef:'', defaultPublishMode:'MANUAL_CONFIRM', nonSensitiveConfig:{locale:'zh-CN'} })
+const accountDialog = ref(false)
+const accountSaving = ref(false)
+const jobCreating = ref(false)
+const publisherLoading = ref(false)
+const selectedPublishMode = ref('MANUAL_CONFIRM')
 
 const planForm = ref<any>({ diagnosisSnapshotId:'', idempotencyKey:crypto.randomUUID(), name:'30天 GEO 内容执行计划', periodStart:new Date().toISOString().slice(0,10), periodEnd:new Date(Date.now()+29*86400000).toISOString().slice(0,10), status:'DRAFT' })
 const workForm = ref<any>({ taskType:'FAQ_CONTENT', title:'', businessValue:3, gapSeverity:3, executionFeasibility:3, evidenceConfidence:3, status:'PLANNED', targetQuestionIds:[], successCriteria:{} })
@@ -55,8 +64,31 @@ async function load() {
   if (!ctx.merchant.value) return
   loading.value = true
   error.value = ''
-  try { plans.value = await m6.plans(ctx.merchant.value.id) } catch (exception:any) { error.value = getError(exception) } finally { loading.value = false }
+  try { plans.value = await m6.plans(ctx.merchant.value.id); await loadPublisherData() } catch (exception:any) { error.value = getError(exception) } finally { loading.value = false }
 }
+async function loadPublisherData() {
+  if (!ctx.merchant.value) return
+  publisherLoading.value = true
+  try { [publisherAccounts.value, publisherJobs.value] = await Promise.all([m6.publisherAccounts(ctx.merchant.value.id), m6.publisherJobs(ctx.merchant.value.id)]) }
+  catch (exception:any) { ElMessage.error(getError(exception)) } finally { publisherLoading.value = false }
+}
+async function savePublisherAccount() {
+  if (!ctx.merchant.value) return
+  accountSaving.value = true
+  try { await m6.createPublisherAccount(ctx.merchant.value.id, accountForm.value); accountDialog.value=false; accountForm.value={displayName:'',externalAccountId:'',profileRef:'',credentialRef:'',defaultPublishMode:'MANUAL_CONFIRM',nonSensitiveConfig:{locale:'zh-CN'}}; await loadPublisherData(); ElMessage.success('账号元数据已登记') }
+  catch (exception:any) { ElMessage.error(getError(exception)) } finally { accountSaving.value=false }
+}
+async function deactivatePublisherAccount(id:string) {
+  if (!ctx.merchant.value) return
+  try { await m6.deactivatePublisherAccount(ctx.merchant.value.id,id); await loadPublisherData(); ElMessage.success('账号已停用') } catch (exception:any) { ElMessage.error(getError(exception)) }
+}
+async function createPublisherJob() {
+  if (!ctx.merchant.value || !selectedDraft.value || selectedDraft.value.status!=='APPROVED' || !publisherAccounts.value.length || jobCreating.value) return
+  jobCreating.value=true
+  try { const job=await m6.createPublisherJob(ctx.merchant.value.id,{sourceDraftId:selectedDraft.value.id,accountId:publisherAccounts.value.find(x=>x.status==='ACTIVE')?.id||publisherAccounts.value[0].id,publishMode:selectedPublishMode.value,assetIds:[],idempotencyKey:crypto.randomUUID()}); await loadPublisherData(); selectedPublisherJob.value=job; ElMessage.success('发布任务已创建并排队，尚未连接 Worker') }
+  catch (exception:any) { ElMessage.error(getError(exception)) } finally { jobCreating.value=false }
+}
+async function openPublisherJob(job:any) { if (!ctx.merchant.value) return; try { selectedPublisherJob.value=await m6.publisherJob(ctx.merchant.value.id,job.id) } catch (exception:any) { ElMessage.error(getError(exception)) } }
 async function openPlan(plan:any) {
   selectedPlan.value = plan
   selectedWork.value = undefined
@@ -153,6 +185,16 @@ watch(() => ctx.merchant.value?.id, load, { immediate:true })
     <div class="module-heading"><div><span class="eyebrow">M6 · CONTENT EXECUTION</span><h2>内容执行中心</h2><p>诊断 → 30天计划 → 工作项 → 可版本化 Content Brief → 人工审核草稿。</p></div></div>
     <el-alert type="info" :closable="false" title="内容由 AI 辅助生成，必须经过人工审核，系统不会自动发布。"/>
     <el-alert v-if="error" type="error" :closable="false" :title="error" style="margin-top:12px"/>
+    <article class="panel publisher-panel">
+      <div class="section-heading"><div><span class="eyebrow">M6.2 · PUBLISHING FOUNDATION</span><h3>安全发布任务</h3><p>当前仅创建安全发布任务，尚未连接浏览器发布 Worker，不会自动发布到平台。</p></div><el-button @click="loadPublisherData" :loading="publisherLoading">刷新</el-button></div>
+      <div class="publisher-columns">
+        <section><div class="subheading"><h4>小红书发布账号</h4><el-button size="small" type="primary" @click="accountDialog=true">新增账号</el-button></div><el-empty v-if="!publisherAccounts.length&&!publisherLoading" description="尚未登记发布账号"/><div v-for="account in publisherAccounts" :key="account.id" class="data-row"><b>{{account.display_name}}</b><small>XIAOHONGSHU · {{account.external_account_id||'无外部账号ID'}} · {{account.status}}</small><el-button text type="danger" @click="deactivatePublisherAccount(account.id)" :disabled="account.deleted">停用</el-button></div></section>
+        <section><div class="subheading"><h4>发布任务</h4><el-button size="small" @click="loadPublisherData">刷新任务</el-button></div><el-empty v-if="!publisherJobs.length&&!publisherLoading" description="尚无发布任务"/><div v-for="job in publisherJobs" :key="job.id" class="data-row"><b>{{job.title_snapshot||'未命名草稿'}}</b><small>{{job.platform}} · {{job.publish_mode}} · {{job.status}} · {{job.account_name}}</small><el-button text @click="openPublisherJob(job)">查看详情</el-button></div></section>
+      </div>
+      <el-alert v-if="selectedDraft?.status==='APPROVED'" type="success" :closable="false" title="当前草稿已通过审核，可创建发布任务。任务会冻结已审核内容，不接受客户端覆盖标题或正文。" style="margin-top:14px"><template #default><div class="publish-actions"><el-select v-model="selectedPublishMode" style="width:170px"><el-option value="DRAFT" label="DRAFT（平台草稿）"/><el-option value="MANUAL_CONFIRM" label="MANUAL_CONFIRM（人工确认）"/></el-select><el-button type="primary" :loading="jobCreating" :disabled="!publisherAccounts.length" @click="createPublisherJob">创建发布任务</el-button><small v-if="!publisherAccounts.length">请先登记一个 ACTIVE 账号；本阶段只保存非敏感元数据，尚未连接浏览器 Worker。</small></div></template></el-alert>
+      <el-alert v-if="selectedPublisherJob" type="info" :closable="false" style="margin-top:14px"><template #title>发布任务详情 · {{selectedPublisherJob.status}}</template><div class="job-detail"><p><b>冻结标题：</b>{{selectedPublisherJob.title_snapshot}}</p><p><b>冻结正文：</b></p><pre>{{selectedPublisherJob.body_snapshot}}</pre><p><b>Content Hash：</b>{{selectedPublisherJob.content_hash}}</p><p><b>Evidence Pack Hash：</b>{{selectedPublisherJob.evidence_pack_hash||'—'}}</p><p><b>审批人：</b>{{selectedPublisherJob.approved_by||'—'}}　<b>审批时间：</b>{{selectedPublisherJob.approved_at||'—'}}</p><p><b>事件时间线：</b></p><div v-for="event in selectedPublisherJob.events||[]" :key="event.id" class="event-line">#{{event.sequence_no}} · {{event.event_type}} · {{event.status}} · {{event.occurred_at}}<span v-if="event.message"> · {{event.message}}</span></div></div></el-alert>
+      <el-dialog v-model="accountDialog" title="登记小红书发布账号" width="520px"><el-form label-position="top"><el-form-item label="显示名称"><el-input v-model="accountForm.displayName" placeholder="例如：千色坊官方账号"/></el-form-item><el-form-item label="外部账号ID（可选）"><el-input v-model="accountForm.externalAccountId"/></el-form-item><el-form-item label="Worker Profile Ref"><el-input v-model="accountForm.profileRef" placeholder="仅填写不含凭证的安全引用"/></el-form-item><el-form-item label="Credential Ref（可选）"><el-input v-model="accountForm.credentialRef" placeholder="仅填写外部凭证库引用，不填Cookie或密码"/></el-form-item><el-alert type="warning" :closable="false" title="禁止填写 Cookie、密码、Token、LocalStorage 或浏览器凭证正文。"/></el-form><template #footer><el-button @click="accountDialog=false">取消</el-button><el-button type="primary" :loading="accountSaving" @click="savePublisherAccount">保存账号元数据</el-button></template></el-dialog>
+    </article>
 
     <div class="module-columns" style="margin-top:18px">
       <article class="panel"><h3>执行计划</h3><el-button :loading="loading" @click="load">刷新</el-button><el-empty v-if="!plans.length&&!loading" description="暂无执行计划"/>
@@ -192,5 +234,5 @@ watch(() => ctx.merchant.value?.id, load, { immediate:true })
 </template>
 
 <style scoped>
-.content-execution{max-width:1320px}.draft-panel{margin-top:18px}.section-heading,.draft-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.section-heading h3{margin:4px 0}.section-heading p,.draft-meta small,.draft-detail>small{display:block;color:#718078;margin-top:5px}.draft-layout{display:grid;grid-template-columns:275px minmax(0,1fr);gap:18px;margin-top:18px}.draft-versions{border-right:1px solid #edf1ee;padding-right:12px}.draft-versions h4{margin-top:0}.brief-choice,.draft-choice{display:flex;width:100%;border:0;background:transparent;text-align:left;padding:12px 8px;border-radius:10px;flex-direction:column;gap:5px;cursor:pointer;color:#294136}.brief-choice:hover,.brief-choice.active,.draft-choice:hover,.draft-choice.active{background:#edf7f0}.brief-choice b,.draft-choice b{font-size:14px}.brief-choice small,.draft-choice small{color:#718078}.draft-choice .el-tag{width:max-content}.draft-detail{min-width:0}.draft-section{border-top:1px solid #edf1ee;margin-top:18px;padding-top:16px}.draft-section h4{margin:0 0 12px}.draft-section h5{margin:12px 0 7px}.content-section,.faq-item,.finding{padding:10px 0;border-bottom:1px solid #f0f3f1}.content-section:last-child,.faq-item:last-child,.finding:last-child{border-bottom:0}.content-section p,.faq-item p,.finding p{line-height:1.65;margin:6px 0}.finding{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}.finding p{width:100%;margin-left:0}.finding-list{padding-left:20px;color:#b33}.review-section .el-input{margin-bottom:10px}.review-section small{display:block;color:#718078;margin-top:10px}.muted-copy{color:#718078}pre{white-space:pre-wrap;word-break:break-word;background:#f6f8f6;padding:12px;border-radius:8px}@media(max-width:900px){.draft-layout{grid-template-columns:1fr}.draft-versions{border-right:0;border-bottom:1px solid #edf1ee;padding:0 0 12px}.section-heading,.draft-meta{flex-direction:column}}
+.content-execution{max-width:1320px}.draft-panel{margin-top:18px}.publisher-panel{margin-top:18px}.section-heading,.draft-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.section-heading h3{margin:4px 0}.section-heading p,.draft-meta small,.draft-detail>small{display:block;color:#718078;margin-top:5px}.publisher-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.subheading{display:flex;justify-content:space-between;align-items:center}.publish-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.publish-actions small{color:#8a5b00}.job-detail p{margin:8px 0}.event-line{padding:7px 0;border-bottom:1px solid #e8eee9;color:#51685a}.draft-layout{display:grid;grid-template-columns:275px minmax(0,1fr);gap:18px;margin-top:18px}.draft-versions{border-right:1px solid #edf1ee;padding-right:12px}.draft-versions h4{margin-top:0}.brief-choice,.draft-choice{display:flex;width:100%;border:0;background:transparent;text-align:left;padding:12px 8px;border-radius:10px;flex-direction:column;gap:5px;cursor:pointer;color:#294136}.brief-choice:hover,.brief-choice.active,.draft-choice:hover,.draft-choice.active{background:#edf7f0}.brief-choice b,.draft-choice b{font-size:14px}.brief-choice small,.draft-choice small{color:#718078}.draft-choice .el-tag{width:max-content}.draft-detail{min-width:0}.draft-section{border-top:1px solid #edf1ee;margin-top:18px;padding-top:16px}.draft-section h4{margin:0 0 12px}.draft-section h5{margin:12px 0 7px}.content-section,.faq-item,.finding{padding:10px 0;border-bottom:1px solid #f0f3f1}.content-section:last-child,.faq-item:last-child,.finding:last-child{border-bottom:0}.content-section p,.faq-item p,.finding p{line-height:1.65;margin:6px 0}.finding{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}.finding p{width:100%;margin-left:0}.finding-list{padding-left:20px;color:#b33}.review-section .el-input{margin-bottom:10px}.review-section small{display:block;color:#718078;margin-top:10px}.muted-copy{color:#718078}pre{white-space:pre-wrap;word-break:break-word;background:#f6f8f6;padding:12px;border-radius:8px}@media(max-width:900px){.publisher-columns{grid-template-columns:1fr}.draft-layout{grid-template-columns:1fr}.draft-versions{border-right:0;border-bottom:1px solid #edf1ee;padding:0 0 12px}.section-heading,.draft-meta{flex-direction:column}}
 </style>

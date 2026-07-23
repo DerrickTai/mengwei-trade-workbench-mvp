@@ -11,7 +11,8 @@ import Execution from '../modules/execution/Execution.vue'
 import RetestsReports from '../modules/retests-reports/RetestsReports.vue'
 import Playbooks from '../modules/playbooks/Playbooks.vue'
 import ContentExecutionCenter from '../modules/content-execution/ContentExecutionCenter.vue'
-const routes=[{path:'/merchants/:merchantId',component:MerchantWorkspaceLayout,redirect:(to:any)=>`/merchants/${to.params.merchantId}/overview`,children:[
+const authEntry={render:()=>null}
+const routes=[{path:'/',component:authEntry},{path:'/login',component:authEntry},{path:'/merchants/:merchantId',component:MerchantWorkspaceLayout,redirect:(to:any)=>`/merchants/${to.params.merchantId}/overview`,children:[
  {path:'overview',component:Overview},{path:'facts',component:Facts},{path:'platform-assets',component:PlatformAssets},{path:'questions-observations',component:QuestionsObservations},{path:'observation-automation',component:ObservationAutomation},{path:'retest-automation',component:RetestAutomation},{path:'diagnosis-strategy',component:DiagnosisStrategy},{path:'execution',component:Execution},{path:'content-execution',component:ContentExecutionCenter},{path:'retests-reports',component:RetestsReports},{path:'playbooks',component:Playbooks}
-]}]
+]} ,{path:'/:pathMatch(.*)*',redirect:'/login'}]
 export default createRouter({history:createWebHistory(),routes})
